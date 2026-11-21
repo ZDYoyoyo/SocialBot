@@ -1,0 +1,392 @@
+[
+  {
+    "id": 1,
+    "topic": "Spring Boot",
+    "content": "@Transactional 有時候會「默默失效」。\n\nSpring 的交易是靠代理（Proxy）包住你的 Bean 實作的。同一個類別裡用 this.save() 呼叫另一個加了 @Transactional 的方法，呼叫根本沒經過代理，所以交易不會開啟；private 方法上的註解也一樣無效。\n\n解法：把方法拆到另一個 Bean，由外部注入後呼叫。\n\n重點：交易只在「經過 Spring 代理的呼叫」才生效。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 2,
+    "topic": "JVM",
+    "content": "Stack 和 Heap 差在哪？\n\nStack：每個執行緒各自一份，存方法呼叫的 frame、區域變數和物件參考，方法結束就釋放。\nHeap：所有執行緒共享，new 出來的物件都在這裡，由 GC 回收。\n\n所以遞迴太深會丟 StackOverflowError，物件太多回收不掉則是 OutOfMemoryError。\n\n重點：變數「參考」在 Stack，物件「本體」在 Heap。",
+    "hashtags": [
+      "Java",
+      "JVM",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 3,
+    "topic": "SQL",
+    "content": "複合索引要記得「最左前綴原則」。\n\n建立 INDEX(a, b, c) 後：\nWHERE a=1 AND b=2 → 用得到\nWHERE b=2 → 用不到（跳過了 a）\nWHERE a=1 AND c=3 → 只用到 a 的部分\n\n因為索引是先依 a 排序，a 相同再依 b、再依 c，跳過前面的欄位就無法利用排序結構。\n\n重點：設計複合索引時，把最常被當作篩選條件的欄位放最前面。",
+    "hashtags": [
+      "Java",
+      "SQL",
+      "資料庫"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 4,
+    "topic": "併發",
+    "content": "volatile 不能讓 count++ 變安全。\n\nvolatile 只保證「可見性」：一個執行緒寫入，其他執行緒馬上看得到。但 count++ 其實是「讀取 → 加一 → 寫回」三步，兩個執行緒可能同時讀到 5，各自加一後都寫回 6。\n\n正確做法：\nAtomicInteger count = new AtomicInteger();\ncount.incrementAndGet();\n\n重點：volatile 管可見性，不管原子性。",
+    "hashtags": [
+      "Java",
+      "併發",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 5,
+    "topic": "設計模式",
+    "content": "Java 寫 Singleton 最簡單又安全的方式是 enum。\n\npublic enum IdGenerator {\n  INSTANCE;\n  public long next() { ... }\n}\n\n雙重檢查鎖（DCL）寫法容易漏掉 volatile 而出錯；enum 由 JVM 保證只初始化一次，還天生防反射和序列化破壞單例。\n\n另外，Spring 的 Bean 預設就是單例，多數情況交給容器管理即可。\n\n重點：自己寫單例優先用 enum。",
+    "hashtags": [
+      "Java",
+      "設計模式",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 6,
+    "topic": "測試",
+    "content": "單元測試用 AAA 結構，可讀性立刻提升。\n\nArrange：準備資料與依賴\nAct：呼叫要測的方法（只呼叫一次）\nAssert：驗證結果\n\n@Test\nvoid shouldApplyDiscount_whenVip() {\n  var cart = new Cart(1000, true);\n  int total = cart.total();\n  assertEquals(900, total);\n}\n\n測試名稱寫成「在什麼情況下應該怎樣」，失敗時一眼就知道壞在哪。\n\n重點：一個測試只驗證一件事。",
+    "hashtags": [
+      "Java",
+      "單元測試",
+      "JUnit"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 7,
+    "topic": "Spring Boot",
+    "content": "依賴注入優先用「建構子注入」，少用 @Autowired 欄位注入。\n\n@Service\npublic class OrderService {\n  private final PaymentClient client;\n  public OrderService(PaymentClient client) {\n    this.client = client;\n  }\n}\n\n好處：欄位可以是 final、測試時直接 new 傳入 mock、依賴太多一眼看出類別該拆了。只有一個建構子時連 @Autowired 都能省略。\n\n重點：建構子注入讓依賴明確且不可變。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 8,
+    "topic": "JVM",
+    "content": "為什麼 Heap 要分「新生代」和「老年代」？\n\n根據觀察，大多數物件都「朝生夕死」。所以新物件先放在新生代（Eden），頻繁做快速的 Minor GC；存活夠多次的物件才晉升到老年代，較少回收。\n\n這樣每次 GC 只需掃描一小塊區域，效率高很多。Java 9 之後預設的 G1 也保留了分代的概念。\n\n重點：分代收集是基於「多數物件很快就死」這個假設。",
+    "hashtags": [
+      "Java",
+      "JVM",
+      "GC"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 9,
+    "topic": "SQL",
+    "content": "N+1 查詢是 JPA 最常見的效能地雷。\n\n查 100 筆訂單（1 次 SQL），然後迴圈中呼叫 order.getCustomer()，lazy loading 會再對每筆各查 1 次，總共 101 次。\n\n解法：\n@Query(\"select o from Order o join fetch o.customer\")\n或使用 @EntityGraph、設定 batch size。\n\n開發時打開 SQL log，就能及早發現。\n\n重點：看到迴圈裡存取關聯物件，就要想到 N+1。",
+    "hashtags": [
+      "Java",
+      "JPA",
+      "SQL"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 10,
+    "topic": "併發",
+    "content": "不要到處 new Thread()，用執行緒池。\n\n建立執行緒成本高，數量失控還會拖垮系統。但也別直接用 Executors.newFixedThreadPool()，它的佇列是無界的，任務堆積可能 OOM。\n\n建議明確指定參數：\nnew ThreadPoolExecutor(4, 8, 60, SECONDS,\n  new ArrayBlockingQueue<>(100),\n  new ThreadPoolExecutor.CallerRunsPolicy());\n\n重點：執行緒數、佇列大小、拒絕策略都要自己決定。",
+    "hashtags": [
+      "Java",
+      "併發",
+      "執行緒池"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 11,
+    "topic": "設計模式",
+    "content": "一長串 if-else 判斷類型？試試策略模式。\n\ninterface PayStrategy { void pay(int amount); }\n\n每種付款方式各寫一個實作並標上 @Component(\"credit\")、@Component(\"linepay\")。Spring 可以直接注入：\nMap<String, PayStrategy> strategies;\nstrategies.get(type).pay(amount);\n\n新增付款方式只要加一個類別，不用改舊程式碼，符合開放封閉原則。\n\n重點：把「會變的行為」抽成介面。",
+    "hashtags": [
+      "Java",
+      "設計模式",
+      "SpringBoot"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 12,
+    "topic": "測試",
+    "content": "Mockito 的 stub 和 verify 用途不同。\n\nstub：讓依賴回傳指定的值\nwhen(repo.findById(1L)).thenReturn(Optional.of(user));\n\nverify：確認某個互動有發生\nverify(mailer).send(any());\n\n查詢類方法用 stub 控制輸入，有副作用的方法（寄信、寫檔）才用 verify。過度 verify 會讓測試綁死實作細節，一重構就全紅。\n\n重點：優先驗證「結果」，必要時才驗證「互動」。",
+    "hashtags": [
+      "Java",
+      "Mockito",
+      "單元測試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 13,
+    "topic": "Spring Boot",
+    "content": "設定值很多時，用 @ConfigurationProperties 取代一堆 @Value。\n\n@ConfigurationProperties(prefix = \"app.mail\")\n@Validated\npublic record MailProps(\n  @NotBlank String host,\n  int port,\n  Duration timeout) {}\n\napplication.yml：\napp.mail.host: smtp.example.com\napp.mail.timeout: 5s\n\n型別安全、可驗證、集中管理，Duration 還能直接寫 5s。\n\n重點：同一組設定綁成一個物件。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "設定檔"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 14,
+    "topic": "JVM",
+    "content": "類別載入的「雙親委派」是什麼？\n\n載入類別時，ClassLoader 會先請父載入器處理，父載入器找不到才自己載入。順序是 Bootstrap → Platform → Application。\n\n這樣即使你自己寫一個 java.lang.String，也不會取代 JDK 的核心類別，保證了安全性與一致性，同一個類別也不會被重複載入。\n\n重點：先問爸爸，爸爸不會才自己來。",
+    "hashtags": [
+      "Java",
+      "JVM",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 15,
+    "topic": "SQL",
+    "content": "在索引欄位上套函式，索引就失效了。\n\n❌ WHERE YEAR(created_at) = 2025\n資料庫必須逐筆計算 YEAR()，只能全表掃描。\n\n✅ WHERE created_at >= '2025-01-01'\n     AND created_at < '2026-01-01'\n改寫成範圍條件，就能使用 created_at 上的索引。\n\n同理，隱式型別轉換（字串欄位拿數字比較）也可能讓索引失效。\n\n重點：讓索引欄位保持「乾淨」地放在比較式一側。",
+    "hashtags": [
+      "Java",
+      "SQL",
+      "資料庫"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 16,
+    "topic": "併發",
+    "content": "用了 ConcurrentHashMap 不代表就執行緒安全。\n\nif (!map.containsKey(k)) {\n  map.put(k, new Value());\n}\n\n單一操作安全，但「先檢查再放入」是兩步，中間可能被其他執行緒插隊。\n\n改用原子操作：\nmap.computeIfAbsent(k, key -> new Value());\nmap.merge(word, 1, Integer::sum);\n\n重點：複合操作要用 compute、merge 這類原子方法。",
+    "hashtags": [
+      "Java",
+      "併發",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 17,
+    "topic": "設計模式",
+    "content": "建構子參數超過四個，就該考慮 Builder 模式。\n\nnew User(\"Amy\", null, 25, true, null) 根本看不出每個參數的意思。\n\nUser user = User.builder()\n  .name(\"Amy\")\n  .age(25)\n  .vip(true)\n  .build();\n\n可讀性高，選填欄位不用塞 null，還能在 build() 裡統一驗證。搭配 Lombok 的 @Builder 一行搞定。\n\n重點：Builder 讓多參數物件好讀又好建。",
+    "hashtags": [
+      "Java",
+      "設計模式",
+      "Lombok"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 18,
+    "topic": "測試",
+    "content": "不是每個測試都需要 @SpringBootTest。\n\n@SpringBootTest 會啟動整個應用，慢又重。只想測一層時，改用切片測試：\n\n@WebMvcTest：只載入 Controller 層，搭配 MockMvc\n@DataJpaTest：只載入 JPA 與資料庫相關元件\n@JsonTest：只測 JSON 序列化\n\n依賴用 @MockitoBean（舊版為 @MockBean）替換。\n\n重點：測哪一層就只載入哪一層，測試速度差很多。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "測試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 19,
+    "topic": "Spring Boot",
+    "content": "例外處理不要散在每個 Controller，用 @RestControllerAdvice 集中處理。\n\n@RestControllerAdvice\npublic class ApiExceptionHandler {\n  @ExceptionHandler(NotFoundException.class)\n  @ResponseStatus(HttpStatus.NOT_FOUND)\n  ErrorBody handle(NotFoundException e) {\n    return new ErrorBody(e.getMessage());\n  }\n}\n\nController 只管正常流程，錯誤格式全站一致，前端也好處理。\n\n重點：例外處理集中化，回應格式統一。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "API設計"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 20,
+    "topic": "JVM",
+    "content": "字串比較為什麼一定要用 equals()？\n\nString a = \"hi\";\nString b = \"hi\";\nString c = new String(\"hi\");\na == b → true（字面值都指向常數池同一個物件）\na == c → false（new 一定產生新物件）\na.equals(c) → true\n\n== 比的是「是否同一個物件」，equals() 比的才是「內容」。\n\n重點：比較物件內容一律用 equals()。",
+    "hashtags": [
+      "Java",
+      "String",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 21,
+    "topic": "SQL",
+    "content": "交易隔離等級對應要解決的問題：\n\nRead Uncommitted：可能髒讀\nRead Committed：防髒讀，仍可能不可重複讀\nRepeatable Read：再防不可重複讀，仍可能幻讀\nSerializable：全部防，但效能最差\n\nMySQL InnoDB 預設 Repeatable Read，PostgreSQL 預設 Read Committed。\n\n重點：隔離越高越安全，但併發效能越差。",
+    "hashtags": [
+      "Java",
+      "SQL",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 22,
+    "topic": "併發",
+    "content": "避免死鎖最實用的方法：固定加鎖順序。\n\n轉帳時 A 轉 B 先鎖 A 再鎖 B，同時 B 轉 A 先鎖 B 再鎖 A，雙方互相等待就死鎖了。\n\n解法：一律依帳號 id 由小到大加鎖。\nAccount first = a.id < b.id ? a : b;\nAccount second = a.id < b.id ? b : a;\n\n這破壞了死鎖四條件中的「循環等待」。\n\n重點：所有執行緒都用同樣的順序取鎖。",
+    "hashtags": [
+      "Java",
+      "併發",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 23,
+    "topic": "設計模式",
+    "content": "樣板方法模式：父類別定流程，子類別填細節。\n\nabstract class ReportExporter {\n  public final void export() {\n    var data = fetch();\n    write(format(data));\n  }\n  protected abstract String format(Data d);\n}\n\nCSV、PDF 匯出只需各自實作 format()，流程順序不會被改亂（export 設為 final）。\n\n重點：固定不變的步驟放父類別，會變的部分交給子類別。",
+    "hashtags": [
+      "Java",
+      "設計模式",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 24,
+    "topic": "測試",
+    "content": "測試金字塔：多寫單元測試，少寫 E2E 測試。\n\n底層：大量單元測試，執行快、問題好定位\n中層：適量整合測試，驗證元件、資料庫串接\n頂層：少量 E2E 測試，覆蓋關鍵使用者流程\n\nE2E 測試慢又容易因環境不穩而失敗，數量太多會讓 CI 拖很久，大家就不想跑了。\n\n重點：越底層的測試越多、越快。",
+    "hashtags": [
+      "Java",
+      "測試",
+      "軟體工程"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 25,
+    "topic": "Spring Boot",
+    "content": "Spring Boot 自動配置怎麼運作？\n\n@SpringBootApplication 包含 @EnableAutoConfiguration，啟動時會讀取各 starter 宣告的自動配置類別，再依條件決定是否生效，例如：\n\n@ConditionalOnClass：classpath 有某類別才啟用\n@ConditionalOnMissingBean：你沒定義才用預設的\n\n所以你自己宣告一個 DataSource Bean，預設的就會自動讓位。\n\n重點：自動配置 = 條件式的預設 Bean。",
+    "hashtags": [
+      "Java",
+      "SpringBoot",
+      "後端面試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 26,
+    "topic": "JVM",
+    "content": "為什麼 Java 程式剛啟動時比較慢？因為 JIT。\n\n一開始 JVM 用直譯方式執行位元組碼，發現熱點程式碼後，JIT 編譯器才把它編成最佳化的機器碼。\n\n所以用 System.currentTimeMillis() 量一次的時間常常不準。要做效能測試，請用 JMH，它會先暖機再多次量測。\n\n重點：Java 效能要看暖機後的表現。",
+    "hashtags": [
+      "Java",
+      "JVM",
+      "效能"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 27,
+    "topic": "SQL",
+    "content": "深分頁 OFFSET 會越翻越慢。\n\nSELECT * FROM post ORDER BY id LIMIT 10 OFFSET 100000;\n資料庫得先讀過 100010 筆，再丟掉前 100000 筆。\n\n改用 keyset 分頁（游標分頁）：\nSELECT * FROM post\nWHERE id > :lastId\nORDER BY id LIMIT 10;\n\n直接透過索引定位，第幾頁都一樣快。適合無限捲動的介面。\n\n重點：大量資料分頁，用「上一頁最後一筆」取代 OFFSET。",
+    "hashtags": [
+      "Java",
+      "SQL",
+      "效能"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 28,
+    "topic": "併發",
+    "content": "CompletableFuture 讓多個非同步呼叫並行再合併結果。\n\nvar user = supplyAsync(() -> userApi.get(id), pool);\nvar orders = supplyAsync(() -> orderApi.list(id), pool);\nvar page = user.thenCombine(orders, Page::new)\n  .exceptionally(ex -> Page.empty());\n\n兩個 API 同時呼叫，總時間約等於較慢的那個。注意：不指定 pool 會用共用的 ForkJoinPool，I/O 任務容易把它塞滿。\n\n重點：I/O 型非同步任務要給專用的執行緒池。",
+    "hashtags": [
+      "Java",
+      "併發",
+      "非同步"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 29,
+    "topic": "設計模式",
+    "content": "觀察者模式在 Spring 裡就是事件機制。\n\n訂單成立後要寄信、加點數、通知倉庫，全寫在 OrderService 會越來越肥。\n\npublisher.publishEvent(new OrderCreated(id));\n\n@EventListener\nvoid onCreated(OrderCreated e) { ... }\n\n各功能自己監聽事件，彼此不認識。若要在交易提交後才執行，可改用 @TransactionalEventListener。\n\n重點：用事件讓主流程和附加功能解耦。",
+    "hashtags": [
+      "Java",
+      "設計模式",
+      "SpringBoot"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  },
+  {
+    "id": 30,
+    "topic": "測試",
+    "content": "整合測試別再用 H2 假裝是 MySQL，試試 Testcontainers。\n\nH2 和正式資料庫的 SQL 方言、函式、鎖行為都不同，測試全綠上線卻壞掉的情況很常見。\n\n@Container\n@ServiceConnection\nstatic PostgreSQLContainer<?> db =\n  new PostgreSQLContainer<>(\"postgres:16\");\n\n測試時用 Docker 啟動真正的資料庫，結束自動清除。\n\n重點：整合測試要盡量貼近正式環境。",
+    "hashtags": [
+      "Java",
+      "Testcontainers",
+      "整合測試"
+    ],
+    "published": false,
+    "published_at": null,
+    "threads_post_id": null
+  }
+]

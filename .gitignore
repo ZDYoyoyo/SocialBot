@@ -1,0 +1,12 @@
+# 機密：絕對不要 commit
+.env
+.env.*
+*.token
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
