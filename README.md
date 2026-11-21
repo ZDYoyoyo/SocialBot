@@ -81,6 +81,47 @@ python -m bot.token_tool login
 
 （如果你已經用其他方式拿到短期 token，可改用 `python -m bot.token_tool exchange`。）
 
+### 📱 只有手機、沒有電腦的取得方式
+
+全程在手機瀏覽器完成，**不需要安裝任何東西**。建議用 Chrome／Safari 並開啟「要求桌面版網站」，Meta 與 GitHub 的設定頁面在手機版常常顯示不完整。
+
+**A. 取得短期 token（1 小時效期）**
+
+1. 打開 Graph API Explorer：<https://developers.facebook.com/tools/explorer/>
+2. 右側選擇你在第 2 節建立的 App
+3. 在 Tools／產生 token 的選單中選 **「Generate Threads Access Token」**，用你的 Threads 帳號按「允許」
+4. 複製產生的 token（這是短期 token）
+
+> 如果出現「user has not accepted the invite」之類錯誤，代表第 2 節第 7 步的測試人員邀請還沒接受。
+
+**B. 換成長期 token（60 天）**
+
+開一個**無痕分頁**，把下面網址的兩處換成你的值後打開：
+
+```
+https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret=你的AppSecret&access_token=短期token
+```
+
+頁面會顯示類似：
+
+```json
+{"access_token":"THAA...很長一串","token_type":"bearer","expires_in":5184000}
+```
+
+- `access_token` 那串就是長期 token
+- `expires_in` 5184000 秒 = 60 天。到期日 = 今天 + 59 天（保守提早一天），例如今天 11/22 → 填 `2027-01-20`
+
+**C. 收尾**
+
+1. 把長期 token 貼到 GitHub Secret（第 4 節），另外存一份到手機的密碼管理工具（之後續期要用，GitHub Secret 存進去後無法再讀出）
+2. 關閉無痕分頁。因為網址中含有 App Secret 與 token，**不要**用一般分頁開，也不要把這個網址傳給任何人
+
+**檢查 token 是否有效**（無痕分頁打開，顯示你的帳號名稱就代表有效）：
+
+```
+https://graph.threads.net/v1.0/me?fields=id,username&access_token=你的token
+```
+
 ## 4. 設定 GitHub Secrets 與 Variables
 
 到 GitHub repo →「Settings」→「Secrets and variables」→「Actions」：
@@ -196,7 +237,13 @@ python -m bot.main
 3. 把印出的**新日期**更新到 Variable `THREADS_TOKEN_EXPIRES_AT`
 4. 關閉提醒 Issue
 
-**如果已經過期了**：refresh 會失敗，請重做第 3 節的 `login` 取得新 token，再更新 Secret 與 Variable。之後可以手動執行 workflow 補發今天的文章。
+**📱 只用手機續期**：在無痕分頁打開以下網址（換成目前的長期 token），把回傳的新 `access_token` 與新到期日（今天 + 59 天）照上面第 2、3 步更新：
+
+```
+https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&access_token=目前的長期token
+```
+
+**如果已經過期了**：refresh 會失敗，請重做第 3 節（電腦用 `login`，手機用「只有手機」的 A、B 步驟）取得新 token，再更新 Secret 與 Variable。之後可以手動執行 workflow 補發今天的文章。
 
 ## 10. 常見錯誤排解
 
