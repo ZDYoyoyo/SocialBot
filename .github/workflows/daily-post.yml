@@ -1,0 +1,71 @@
+name: Daily Threads Post
+
+on:
+  schedule:
+    # GitHub 的 cron 用 UTC。00:07 UTC = 台灣 08:07。
+    # 避開整點是因為整點排程最擁擠、最容易延遲。
+    - cron: "7 0 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run：只顯示今天要發哪一篇，不實際發文"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # commit posts.json
+  issues: write     # 開提醒 Issue
+
+# 避免兩次執行同時跑造成重複發文
+concurrency:
+  group: daily-threads-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Post to Threads
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_TOKEN_EXPIRES_AT: ${{ vars.THREADS_TOKEN_EXPIRES_AT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 排程觸發時沒有 inputs，會是空字串 → 正式發文
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            python -m bot.main --dry-run
+          else
+            python -m bot.main
+          fi
+
+      - name: Commit updated posts.json
+        # always()：就算上一步失敗（例如發文成功但開 Issue 出錯），也要把已發布狀態存回去
+        if: ${{ always() && inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add posts.json
+          if git diff --cached --quiet; then
+            echo "posts.json 沒有變更，不需要 commit"
+            exit 0
+          fi
+          git commit -m "chore: mark post as published [skip ci]"
+          for i in 1 2 3 4; do
+            git pull --rebase && git push && exit 0
+            echo "push 失敗，$((i * 5)) 秒後重試…"
+            sleep $((i * 5))
+          done
+          echo "::error::無法 push posts.json，請手動確認已發布狀態，避免明天重複發文"
+          exit 1
