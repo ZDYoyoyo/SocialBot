@@ -249,6 +249,7 @@ https://graph.threads.net/refresh_access_token?grant_type=th_refresh_token&acces
 
 | 錯誤訊息 | 原因與處理 |
 |---|---|
+| `找不到 THREADS_ACCESS_TOKEN：GitHub Secret 沒有設定或名稱拼錯` | Secret 要建在**這個 repo** 的 Settings → Secrets and variables → Actions → **Secrets** 分頁 →「Repository secrets」，名稱完全一致。不是 Variables、不是 Environment secrets |
 | `Threads access token 已過期或無效` | token 過期、被撤銷，或你改了密碼。依第 9 節處理（過期則重做第 3 節） |
 | `權限不足，請確認 App 已取得 threads_basic 與 threads_content_publish 權限` | 第 2 節第 4 步的權限沒加，或取得 token 時沒勾選；加好後重做第 3 節 |
 | `已達 Threads API 呼叫上限` | 短時間呼叫太多次（Threads 每 24 小時最多 250 篇），稍後再試 |
