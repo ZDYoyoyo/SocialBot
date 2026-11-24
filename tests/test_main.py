@@ -159,3 +159,14 @@ def test_github_actions_annotations_and_summary(write_posts, client, issues, tmp
     assert "::warning::" in capsys.readouterr().out
     text = summary.read_text(encoding="utf-8")
     assert "已發布 id=2" in text
+
+
+def test_missing_secret_gives_clear_error(write_posts, issues, capsys):
+    path = write_posts([make_post(1), make_post(2)])
+    env = {"GITHUB_TOKEN": "gh", "GITHUB_REPOSITORY": "me/repo"}  # 沒有 THREADS_ACCESS_TOKEN
+    assert run(["--posts", str(path)], env=env, now=NOW, issues=issues) == 1
+    err = capsys.readouterr().err
+    assert "GitHub Secret 沒有設定或名稱拼錯" in err
+    assert "Repository secrets" in err
+    assert labels(issues) == [LABEL_TOKEN]
+    assert read(path)[0]["published"] is False

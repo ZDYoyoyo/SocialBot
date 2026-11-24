@@ -126,7 +126,19 @@ def _run(
         _remind_low_posts(0, open_issue)
         return 0
 
-    # 5. 發文
+    # 5. 發文前先確認有拿到 token（沒拿到通常是 GitHub Secret 沒設定或名稱拼錯）
+    if threads_client is None and not config.threads_token:
+        msg = (
+            "找不到 THREADS_ACCESS_TOKEN：GitHub Secret 沒有設定或名稱拼錯。"
+            "請到 repo 的 Settings → Secrets and variables → Actions → Secrets 分頁，"
+            "確認「Repository secrets」中有名稱完全相同的 THREADS_ACCESS_TOKEN"
+            "（不是 Variables、不是 Environment secrets、也不是別的 repo）。"
+        )
+        report.error(msg)
+        open_issue("🔑 找不到 Threads token（GitHub Secret 未設定），今日發文失敗", msg, LABEL_TOKEN)
+        return 1
+
+    # 6. 發文
     text = posts_mod.format_post(post)
     report.info(f"準備發布 id={post['id']}（{post['topic']}），長度 {posts_mod.text_length(text)}")
     try:
@@ -144,7 +156,7 @@ def _run(
         report.error(f"發文失敗（文章 id={post['id']}）：{exc}")
         return 1
 
-    # 6. 成功後立刻存檔，避免之後步驟失敗造成重複發文
+    # 7. 成功後立刻存檔，避免之後步驟失敗造成重複發文
     posts_mod.mark_published(post, threads_post_id, now)
     posts_mod.save_posts(args.posts, all_posts)
     report.info(f"✅ 發文成功！Threads 貼文 id={threads_post_id}")
@@ -153,7 +165,7 @@ def _run(
         f"```\n{text}\n```"
     )
 
-    # 7. 剩餘文章檢查
+    # 8. 剩餘文章檢查
     remaining = posts_mod.unpublished_count(all_posts)
     report.info(f"剩餘未發布文章：{remaining} 篇")
     if remaining < LOW_POSTS_THRESHOLD:
